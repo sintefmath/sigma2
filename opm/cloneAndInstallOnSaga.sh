@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Author: Franz G. Fuchs
+
 module purge
 module load CMake/3.12.1
 module load Boost/1.71.0-GCC-8.3.0
