@@ -1,13 +1,9 @@
 #!/bin/bash
-
+set -e
 ## Author: Franz G. Fuchs
 
 module purge
-module load CMake/3.12.1
-module load Boost/1.71.0-GCC-8.3.0
-module load GCC/8.3.0
-module load OpenMPI/3.1.4-GCC-8.3.0
-module load OpenBLAS/0.3.7-GCC-8.3.0
+source modules_to_load.sh
 
 location=`pwd`
 
@@ -17,18 +13,24 @@ parallel_build_tasks=9
 ### Zoltan
 #############################################
 
+
+export INSTALL_PREFIX=$location"/boost"
+
+bash install_boost.sh
 install_prefix=$location"/zoltan"
 if [[ ! -d $install_prefix ]]; then
     mkdir $install_prefix
 fi
 
 if [[ ! -d Trilinos ]]; then
+
     git clone https://github.com/trilinos/Trilinos.git
+
 fi
 (
     cd Trilinos
     git checkout trilinos-release-12-8-1
-    git pull
+
     if [[ ! -d build ]]; then
         mkdir build
     fi
@@ -43,7 +45,8 @@ fi
     ../
     make -j $parallel_build_tasks
     make install
-    rm -r Trilinos
+    cd $location
+#    rm -rf Trilinos
 )
 
 #############################################
@@ -61,7 +64,8 @@ do
     (
         cd $repo
         git pull
-        if [[ ! -d $repo ]]; then
+	rm -rf build
+        if [[ ! -d build ]]; then
             mkdir build
         fi
         cd build
@@ -88,7 +92,7 @@ do
             mkdir build
         fi
         cd build
-        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/zoltan/;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;" -DCMAKE_BUILD_TYPE=Release -Wno-dev .. 
+        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/zoltan/;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;$location/boost" -DCMAKE_BUILD_TYPE=Release -Wno-dev .. 
         make -j $parallel_build_tasks
     )
 done
