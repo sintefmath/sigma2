@@ -12,7 +12,7 @@ Since we have not uploaded the Dockerfile to dockerhub, you have to manually bui
  
  Simply run 
  
-     docker run -it --rm opm_mpi <number of mpi procs>
+     docker run --user $(id -u):$(id -g) -it --rm opm_mpi <number of mpi procs>
      
 ## Changing compiler or MPI type
 
