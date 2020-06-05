@@ -1,10 +1,10 @@
 FROM ubuntu:20.04
 
 # GENERAL BUILD SETUP
-ENV PARALLEL_BUILD_TASKS 4
-ENV CC=clang
-ENV CXX=clang++
-ENV CMAKE_BUILD_TYPE Release
+ARG PARALLEL_BUILD_TASKS=4
+ARG CC=clang
+ARG CXX=clang++
+ARG CMAKE_BUILD_TYPE=Release
 # This is where the source code of DUNE and OPM will be stored.
 # so you will get folders
 #   ${SOURCE_CODE_DIR}/opm-common
@@ -38,7 +38,7 @@ ENV DUNE_MAJOR_VERSION 2
 ENV DUNE_MINOR_VERSION 7
 
 # MPI
-ENV OPM_MPI_TYPE "MPICH"
+ARG OPM_MPI_TYPE="MPICH"
 
 
 RUN mkdir -p ${SOURCE_CODE_DIR}
