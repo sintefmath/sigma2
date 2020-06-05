@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ "${OPM_MPI_TYPE}" -eq "OPENMPI" ];
+if [ "${OPM_MPI_TYPE}" == "OPENMPI" ];
 then
   ##### OPENMPI
   cd ${SOURCE_CODE_DIR}
@@ -13,7 +13,7 @@ then
   cd ${SOURCE_CODE_DIR}
   rm -rf openmpi-4.0.3*
 
-elif [ "${OPM_MPI_TYPE}" -eq "MPICH" ];
+elif [ "${OPM_MPI_TYPE}" == "MPICH" ];
 then
   ##### MPICH
   cd ${SOURCE_CODE_DIR}
