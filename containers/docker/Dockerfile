@@ -55,11 +55,6 @@ COPY compile_mpi.sh ${SOURCE_CODE_DIR}/
 RUN cd ${SOURCE_CODE_DIR} && \
   bash compile_mpi.sh
 
-#### METIS AND FRIENDS
-COPY compile_parmetis_and_friends.sh ${SOURCE_CODE_DIR}/
-#RUN cd ${SOURCE_CODE_DIR} && \
-#bash compile_parmetis_and_friends.sh
-
 
 ###### BOOST
 RUN cd ${SOURCE_CODE_DIR} &&\
