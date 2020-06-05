@@ -44,15 +44,22 @@ ARG OPM_MPI_TYPE="MPICH"
 RUN mkdir -p ${SOURCE_CODE_DIR}
 
 RUN apt-get update &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential clang wget automake cmake \
-      git gfortran libopenblas-dev libsuitesparse-dev python3-all-dev libscotchparmetis-dev libmetis-dev \
-      python3-numpy
+    DEBIAN_FRONTEND=noninteractive apt-get install -y g++ gcc build-essential clang wget automake cmake \
+      git gfortran libopenblas-dev libsuitesparse-dev python3-all-dev \
+      python3-numpy software-properties-common libomp-dev m4 unzip curl libtool autoconf
 
 
-###### OPENMPI
+
+###### MPI
 COPY compile_mpi.sh ${SOURCE_CODE_DIR}/
 RUN cd ${SOURCE_CODE_DIR} && \
   bash compile_mpi.sh
+
+#### METIS AND FRIENDS
+COPY compile_parmetis_and_friends.sh ${SOURCE_CODE_DIR}/
+#RUN cd ${SOURCE_CODE_DIR} && \
+#bash compile_parmetis_and_friends.sh
+
 
 ###### BOOST
 RUN cd ${SOURCE_CODE_DIR} &&\
