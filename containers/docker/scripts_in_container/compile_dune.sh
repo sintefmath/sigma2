@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
-if [-z ${PARALLEL_BUILD_TASKS} ];
+if [ -z ${PARALLEL_BUILD_TASKS} ];
 then
   PARALLEL_BUILD_TASKS=4
 fi
+
 export SOURCE_CODE_DIR=$(realpath .)
 for repo in dune-common dune-geometry dune-grid dune-istl;
 do

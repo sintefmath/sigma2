@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [-z ${PARALLEL_BUILD_TASKS} ];
+if [ -z ${PARALLEL_BUILD_TASKS} ];
 then
   PARALLEL_BUILD_TASKS=4
 fi
@@ -10,7 +10,8 @@ if [[ $# -eq 0 ]];
 then
   CLANG_SANITIZE_FLAG=" "
 else
-  CLANG_SANITIZE_FLAG="-fsanitize=${OPM_CLANG_SANITIZE} "
+  echo "arguments are: $@"
+  CLANG_SANITIZE_FLAG="-fsanitize=$1 "
 fi
 
 
@@ -30,7 +31,10 @@ do
     -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/build;${SOURCE_CODE_DIR}/dune-geometry/build;${SOURCE_CODE_DIR}/dune-grid/build;${SOURCE_CODE_DIR}/dune-istl/build;" \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -Wno-dev .. \
-    -DCMAKE_CXX_FLAGS=${CLANG_SANITIZE_FLAG}
-  make -j ${PARALLEL_BUILD_TASKS}
+    -DCMAKE_CXX_FLAGS=${CLANG_SANITIZE_FLAG} \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_BUILD_EBOS=OFF \
+    -DBUILD_EXAMPLES=OFF
+  make -j${PARALLEL_BUILD_TASKS}
   cd ../..
 done
