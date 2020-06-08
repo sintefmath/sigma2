@@ -92,6 +92,8 @@ RUN cd ${SOURCE_CODE_DIR} && \
 
 
 ##### OPM
+# leave blank for none
+ARG OPM_CLANG_SANITIZE='address'
 COPY compile_opm.sh ${SOURCE_CODE_DIR}/
 RUN cd ${SOURCE_CODE_DIR} && \
   bash compile_opm.sh
