@@ -58,13 +58,12 @@ RUN cd ${SOURCE_CODE_DIR} && \
 
 ###### BOOST
 RUN cd ${SOURCE_CODE_DIR} &&\
-    wget https://dl.bintray.com/boostorg/release/${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION}/source/boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}.tar.bz2 && \
-    tar xf boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}.tar.bz2 &&\
-    cd boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION} && \
-    ./bootstrap.sh --with-python=$(wich python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
+    git clone --recursive --branch boost-${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION} https://github.com/boostorg/boost  --single-branch && \
+    cd boost && \
+    ./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
     ./b2  --toolset=$CC --threading=multi install && \
     cd ${SOURCE_CODE_DIR} && \
-    rm -rf boost_*
+    rm -rf boost*
 
 ##### TRILINOS
 RUN cd ${SOURCE_CODE_DIR} && \
