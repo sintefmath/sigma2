@@ -4,7 +4,7 @@ FROM ubuntu:20.04
 ARG PARALLEL_BUILD_TASKS=4
 ARG CC=clang
 ARG CXX=clang++
-ARG CMAKE_BUILD_TYPE=Release
+ENV CMAKE_BUILD_TYPE=Release
 # This is where the source code of DUNE and OPM will be stored.
 # so you will get folders
 #   ${SOURCE_CODE_DIR}/opm-common
@@ -12,6 +12,7 @@ ARG CMAKE_BUILD_TYPE=Release
 #   ${SOURCE_CODE_DIR}/dune-common
 #   ...
 ENV SOURCE_CODE_DIR /source_code
+ENV SCRIPT_DIR /scripts/
 # Used to store OPM-DATA
 ENV DATA_DIR /data
 # Install location of boost and trilinos
@@ -51,7 +52,7 @@ RUN apt-get update &&\
 
 
 ###### MPI
-COPY compile_mpi.sh ${SOURCE_CODE_DIR}/
+COPY scripts_in_container/compile_mpi.sh ${SOURCE_CODE_DIR}/
 RUN cd ${SOURCE_CODE_DIR} && \
   bash compile_mpi.sh
 
@@ -77,7 +78,9 @@ RUN cd ${SOURCE_CODE_DIR} && \
     -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
     -D Trilinos_ENABLE_Zoltan:BOOL=ON \
     -D Trilinos_ENABLE_Fortran:BOOL=OFF \
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS='-fPIE' \
+    -DCMAKE_CXX_FLAGS='-fPIE' \
     -Wno-dev \
     ../ &&\
   make -j ${PARALLEL_BUILD_TASKS} && \
@@ -85,48 +88,30 @@ RUN cd ${SOURCE_CODE_DIR} && \
   cd ${SOURCE_CODE_DIR} && \
   rm -rf Trilinos
 
-##### DUNE
-COPY compile_dune.sh ${SOURCE_CODE_DIR}/
-RUN cd ${SOURCE_CODE_DIR} && \
-  bash compile_dune.sh
-
-
-##### OPM
-# leave blank for none
-ARG OPM_CLANG_SANITIZE='address'
-COPY compile_opm.sh ${SOURCE_CODE_DIR}/
-RUN cd ${SOURCE_CODE_DIR} && \
-  bash compile_opm.sh
-
-# ##### ALSVINN
-# RUN git clone --recursive https://github.com/alsvinn/alsvinn.git &&\
-#    cd alsvinn && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-#     -DALSVINN_PYTHON_VERSION=3.8 \
-#     -DALSVINN_USE_CUDA=OFF \
-#     -DALSVINN_BUILD_TESTS=OFF \
-#     -DALSVINN_BUILD_DOXYGEN=OFF \
-#     -DCMAKE_INSTALL_PREFIX=${ALSVINN_INSTALL_PREFIX} && \
-#   make -j ${PARALLEL_BUILD_TASKS} install
-
-
-
 ##### OPM-DATA
 RUN mkdir -p $DATA_DIR && \
   cd $DATA_DIR && \
   git clone https://github.com/OPM/opm-data
 
-
 RUN mkdir -p ${DATA_DIR}/scratch
 
 WORKDIR ${DATA_DIR}/scratch
+
+
+##### SCRIPTS
+RUN mkdir -p ${SCRIPT_DIR}
+COPY scripts_in_container/compile_dune.sh ${SCRIPT_DIR}/
+COPY scripts_in_container/compile_opm.sh ${SCRIPT_DIR}/
+COPY scripts_in_container/run_simulator.sh ${SCRIPT_DIR}/
+COPY scripts_in_container/compile.sh ${SCRIPT_DIR}/
+COPY scripts_in_container/entrypoint.sh ${SCRIPT_DIR}/
+RUN chmod -R a+rwX ${SCRIPT_DIR}
+
 
 ##### Make read-write for everyone
 RUN chmod -R a+rwX ${DATA_DIR} && \
   chmod -R a+rwX ${SOURCE_CODE_DIR}
 
 
-COPY "run_simulator.sh" /data/
-ENTRYPOINT ["bash", "/data//run_simulator.sh"]
+# see https://stackoverflow.com/questions/49133234/docker-entrypoint-with-env-variable-and-optional-arguments
+ENTRYPOINT ["bash", "/scripts/entrypoint.sh"]
