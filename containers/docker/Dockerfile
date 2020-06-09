@@ -4,7 +4,7 @@ FROM ubuntu:20.04
 ARG PARALLEL_BUILD_TASKS=4
 ARG CC=clang
 ARG CXX=clang++
-ENV CMAKE_BUILD_TYPE=Release
+ENV CMAKE_BUILD_TYPE=RelWithDebInfo
 # This is where the source code of DUNE and OPM will be stored.
 # so you will get folders
 #   ${SOURCE_CODE_DIR}/opm-common
@@ -31,7 +31,7 @@ ENV BOOST_RELEASE_VERSION 0
 
 ## Trilinos
 ENV TRILINOS_MAJOR_VERSION 12
-ENV TRILINOS_MINOR_VERSION 8
+ENV TRILINOS_MINOR_VERSION 18
 ENV TRILINOS_RELEASE_VERSION 1
 
 #DUNE
@@ -47,7 +47,8 @@ RUN mkdir -p ${SOURCE_CODE_DIR}
 RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y g++ gcc build-essential clang wget automake cmake \
       git gfortran libopenblas-dev libsuitesparse-dev python3-all-dev \
-      python3-numpy software-properties-common libomp-dev m4 unzip curl libtool autoconf
+      python3-numpy software-properties-common libomp-dev m4 unzip curl libtool autoconf \
+      libc++-dev libc++abi-dev
 
 
 
@@ -62,7 +63,7 @@ RUN cd ${SOURCE_CODE_DIR} &&\
     git clone --recursive --branch boost-${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION} https://github.com/boostorg/boost  --single-branch && \
     cd boost && \
     ./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
-    ./b2  --toolset=$CC --threading=multi install && \
+    ./b2  --toolset=$CC cxxflags="-std=c++1y -stdlib=libc++" linkflags="-stdlib=libc++" --threading=multi install && \
     cd ${SOURCE_CODE_DIR} && \
     rm -rf boost*
 
@@ -78,7 +79,7 @@ RUN cd ${SOURCE_CODE_DIR} && \
     -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
     -D Trilinos_ENABLE_Zoltan:BOOL=ON \
     -D Trilinos_ENABLE_Fortran:BOOL=OFF \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DCMAKE_C_FLAGS='-fPIE' \
     -DCMAKE_CXX_FLAGS='-fPIE' \
     -Wno-dev \

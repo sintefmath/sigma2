@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-export CFLAGS='-O2'
-export CXXFLAGS='-O2'
+#export CFLAGS='-O2'
+#export CXXFLAGS='-O2'
 
 if [ "${OPM_MPI_TYPE}" == "OPENMPI" ];
 then

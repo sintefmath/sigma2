@@ -4,7 +4,15 @@ if [ -z ${PARALLEL_BUILD_TASKS} ];
 then
   PARALLEL_BUILD_TASKS=4
 fi
-
+if [[ $# -eq 0 ]];
+then
+  CLANG_SANITIZE_FLAG=" "
+  BUILD_POSTFIX=''
+else
+  CLANG_SANITIZE_FLAG="-fsanitize=$1 "
+  BUILD_POSTFIX="_${1}"
+fi
+BUILD_FOLDER="build${BUILD_POSTFIX}"
 export SOURCE_CODE_DIR=$(realpath .)
 for repo in dune-common dune-geometry dune-grid dune-istl;
 do
@@ -14,10 +22,12 @@ do
     git clone -b releases/${DUNE_MAJOR_VERSION}.${DUNE_MINOR_VERSION} https://gitlab.dune-project.org/core/$repo.git
   fi
   cd $repo
-  mkdir -p build
-  cd build
+  mkdir -p ${BUILD_FOLDER}
+  cd ${BUILD_FOLDER}
   cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-    -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/build;${SOURCE_CODE_DIR}/dune-geometry/build;${SOURCE_CODE_DIR}/dune-grid/build;${SOURCE_CODE_DIR}/dune-istl/build;" \
+    -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
+    -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
+    -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
     ..
   make -j ${PARALLEL_BUILD_TASKS}
   cd ../..
