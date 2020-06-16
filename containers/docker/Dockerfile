@@ -106,6 +106,7 @@ COPY scripts_in_container/compile_opm.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/run_simulator.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/compile.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/entrypoint.sh ${SCRIPT_DIR}/
+COPY scripts_in_container/blacklist_*.txt ${SCRIPT_DIR}/
 RUN chmod -R a+rwX ${SCRIPT_DIR}
 
 
