@@ -11,7 +11,7 @@ then
   CLANG_SANITIZE_FLAG=" "
   BUILD_POSTFIX=''
 else
-  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=$SCRIPT_DIR/blacklist_${1}.txt"
+  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=$SCRIPT_DIR/blacklist_${1}.txt -fsanitize-recover=${1}"
   BUILD_POSTFIX="_${1}"
 fi
 

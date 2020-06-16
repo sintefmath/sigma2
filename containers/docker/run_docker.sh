@@ -19,6 +19,6 @@ docker run -it --rm -v $PROGRAM_DIR:$PROGRAM_DIR -w $PROGRAM_DIR \
     --env SOURCE_CODE_DIR="$PROGRAM_DIR" \
     --env CC=clang \
     --env CXX=clang++ \
-    --env ASAN_OPTIONS=detect_container_overflow=0 \
+    --env ASAN_OPTIONS=halt_on_error=0 \
     --user  $(id -u):$(id -g) \
     opm_mpi "RUN" $1 $2
