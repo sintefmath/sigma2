@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-if [[ $# -eq 0 ]];
+if [[ $# -eq 1 ]];
 then
   number_of_processes=1
 else
-  number_of_processes=$1
+  number_of_processes=$2
 fi
 
 mpirun_version_output=$(mpirun --version)
@@ -24,9 +24,15 @@ else
     mpirun -f hosts "$@"
   }
 fi
+if [[ $# -eq 0 ]];
+then
+  BUILD_POSTFIX=''
+else
+  BUILD_POSTFIX="_${1}"
+fi
 
 
 # Run simulator
-run_mpi_with_hosts -np $number_of_processes $SOURCE_CODE_DIR/opm-simulators/build/bin/flow \
+run_mpi_with_hosts -np $number_of_processes $SOURCE_CODE_DIR/opm-simulators/build${BUILD_POSTFIX}/bin/flow \
   $DATA_DIR/opm-data/norne/NORNE_ATW2013.DATA \
   --threads-per-process=1 --output-dir=output

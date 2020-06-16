@@ -21,4 +21,4 @@ docker run -it --rm -v $PROGRAM_DIR:$PROGRAM_DIR -w $PROGRAM_DIR \
     --env CXX=clang++ \
     --env ASAN_OPTIONS=detect_container_overflow=0 \
     --user  $(id -u):$(id -g) \
-    opm_mpi "RUN" $2
+    opm_mpi "RUN" $1 $2
