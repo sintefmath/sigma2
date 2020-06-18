@@ -26,8 +26,8 @@ do
   cd ${BUILD_FOLDER}
   cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
-    -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
-    -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+    -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=memory -stdlib=libc++ -lc++abi' \
+    -DCMAKE_CXX_FLAGS=${MSAN_CFLAGS} \
     ..
   make -j ${PARALLEL_BUILD_TASKS}
   cd ../..

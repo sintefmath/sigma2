@@ -11,7 +11,7 @@ then
   CLANG_SANITIZE_FLAG=" "
   BUILD_POSTFIX=''
 else
-  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=$SCRIPT_DIR/blacklist_${1}.txt -fsanitize-recover=${1}"
+  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=$SCRIPT_DIR/blacklist_${1}.txt -fsanitize-recover=${1} -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
   BUILD_POSTFIX="_${1}"
 fi
 
@@ -27,10 +27,10 @@ do
   cd $repo
   mkdir -p ${BUILD_FOLDER}
   cd ${BUILD_FOLDER}
-  CXX_FLAGS_TO_CMAKE=${CLANG_SANITIZE_FLAG}
+  CXX_FLAGS_TO_CMAKE=${MSAN_CFLAGS}
   if [ $repo == "opm-common" ];
   then
-    CXX_FLAGS_TO_CMAKE=''
+    #CXX_FLAGS_TO_CMAKE=''
   fi
 
   cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \

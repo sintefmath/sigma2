@@ -1,1 +1,10 @@
 fun:memcmp
+fun:*memcmp*
+src:*/__string
+fun:*parse*
+fun:*addDefaultKeywords*
+fun:*Parse*
+fun:*setMatchRegex*
+src:*/__hash_table
+src:*/__tree
+fun:*__constrain_hash
