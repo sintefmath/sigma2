@@ -2,8 +2,8 @@ FROM ubuntu:20.04
 
 # GENERAL BUILD SETUP
 ARG PARALLEL_BUILD_TASKS=4
-ARG CC=clang
-ARG CXX=clang++
+ENV CC=clang
+ENV CXX=clang++
 
 
 ENV CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -41,12 +41,12 @@ ARG OPM_MPI_TYPE="MPICH"
 
 
 RUN mkdir -p ${SOURCE_CODE_DIR}
-
+#
 RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y g++ gcc build-essential clang wget automake cmake \
       git gfortran libopenblas-dev libsuitesparse-dev python3-all-dev \
       python3-numpy software-properties-common libomp-dev m4 unzip curl libtool autoconf \
-      libc++-dev libc++abi-dev  libatomic1 pkg-config \
+        libatomic1 pkg-config libc++-dev libc++abi-dev \
       && ln -s /usr/bin/llvm-symbolizer-3.8 /usr/bin/llvm-symbolizer \
       && rm -rf /var/lib/apt/lists/*
 
@@ -54,14 +54,23 @@ RUN apt-get update &&\
 # From https://github.com/awslabs/amazon-kinesis-video-streams-webrtc-sdk-c/blob/master/.github/msan-tester.Dockerfile
 # and https://github.com/google/sanitizers/wiki/MemorySanitizerLibcxxHowTo
 RUN cd ${SOURCE_CODE_DIR} && \
-  git clone --depth 1 https://github.com/llvm/llvm-project.git -b llvmorg-9.0.1 \
+  git clone --depth 1 https://github.com/llvm/llvm-project.git -b llvmorg-10.0.0 \
       	&& cd llvm-project \
       	&& cp -r libcxx llvm/projects/ \
       	&& cp -r libcxxabi llvm/projects/ \
       	&& mkdir ${SOURCE_CODE_DIR}/libcxx_msan \
       	&& cd ${SOURCE_CODE_DIR}/libcxx_msan \
-      	&& cmake ../llvm-project/llvm -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_USE_SANITIZER=Memory \
+      	&& cmake ../llvm-project/llvm -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_C_FLAGS='-fPIC' \
+          -DCMAKE_CXX_FLAGS='-fPIC -stdlib=libc++ -lc++abi' \
+          -DCMAKE_SHARED_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
+          -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DLLVM_USE_SANITIZER=Memory \
+          -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
       	&& make cxx -j4 \
+        && make install \
       	&& rm -rf ${SOURCE_CODE_DIR}/llvm-project
 
 # Important for sanitizers
@@ -69,7 +78,7 @@ ARG CLANG_SANITIZER=address
 ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER}"
 ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER}"
 ENV LDFLAGS="-fsanitize=${CLANG_SANITIZER}"
-ENV MSAN_CFLAGS="-fsanitize-recover=memory -fsanitize=memory -stdlib=libc++ -L/${SOURCE_CODE_DIR}/libcxx_msan/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
+ENV MSAN_CFLAGS="-fsanitize-recover=memory -fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
 
 
 ###### MPI
@@ -83,7 +92,7 @@ RUN cd ${SOURCE_CODE_DIR} &&\
     git clone --recursive --branch boost-${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION} https://github.com/boostorg/boost  --single-branch && \
     cd boost && \
     ./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
-    ./b2  --toolset=$CC cxxflags="${MSAN_CFLAGS}" linkflags="-fsanitize=memory -stdlib=libc++ -L/${SOURCE_CODE_DIR}/libcxx_msan/lib" --threading=multi install && \
+    ./b2  --toolset=$CC cxxflags="${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include" linkflags="-fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib" --threading=multi install && \
     cd ${SOURCE_CODE_DIR} && \
     rm -rf boost*
 
