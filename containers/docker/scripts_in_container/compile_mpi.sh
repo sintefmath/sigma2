@@ -3,6 +3,9 @@ set -e
 
 #export CFLAGS='-O2'
 #export CXXFLAGS='-O2'
+export CFLAGS="-fPIE -fno-omit-frame-pointer -O0 -g"
+export CXXFLAGS="-fPIE -fno-omit-frame-pointer -O0 -g"
+export LDFLAGS=""
 
 if [ "${OPM_MPI_TYPE}" == "OPENMPI" ];
 then

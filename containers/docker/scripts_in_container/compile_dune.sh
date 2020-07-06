@@ -28,7 +28,7 @@ do
     -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
     -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=memory -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
     -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=memory -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
-    -DCMAKE_CXX_FLAGS=${MSAN_CFLAGS} \
+    -DCMAKE_CXX_FLAGS="${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include" \
     -DCMAKE_CXX_COMPILER=${CXX} \
     -DCMAKE_C_COMPILER=${CC} \
     ..

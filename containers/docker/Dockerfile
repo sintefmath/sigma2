@@ -6,7 +6,7 @@ ENV CC=clang
 ENV CXX=clang++
 
 
-ENV CMAKE_BUILD_TYPE=RelWithDebInfo
+ENV CMAKE_BUILD_TYPE=Debug
 # This is where the source code of DUNE and OPM will be stored.
 # so you will get folders
 #   ${SOURCE_CODE_DIR}/opm-common
@@ -41,12 +41,13 @@ ARG OPM_MPI_TYPE="MPICH"
 
 
 RUN mkdir -p ${SOURCE_CODE_DIR}
-#
+##
 RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y g++ gcc build-essential clang wget automake cmake \
       git gfortran libopenblas-dev libsuitesparse-dev python3-all-dev \
       python3-numpy software-properties-common libomp-dev m4 unzip curl libtool autoconf \
-        libatomic1 pkg-config libc++-dev libc++abi-dev \
+        libatomic1 pkg-config \
+        libc++-dev libc++abi-dev \
       && ln -s /usr/bin/llvm-symbolizer-3.8 /usr/bin/llvm-symbolizer \
       && rm -rf /var/lib/apt/lists/*
 
@@ -58,9 +59,9 @@ RUN cd ${SOURCE_CODE_DIR} && \
       	&& cd llvm-project \
       	&& cp -r libcxx llvm/projects/ \
       	&& cp -r libcxxabi llvm/projects/ \
-      	&& mkdir ${SOURCE_CODE_DIR}/libcxx_msan \
-      	&& cd ${SOURCE_CODE_DIR}/libcxx_msan \
-      	&& cmake ../llvm-project/llvm -DCMAKE_BUILD_TYPE=Release \
+      	&& mkdir ${SOURCE_CODE_DIR}/build \
+      	&& cd ${SOURCE_CODE_DIR}/build \
+      	&& cmake ../llvm-project/llvm -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_C_FLAGS='-fPIC' \
           -DCMAKE_CXX_FLAGS='-fPIC -stdlib=libc++ -lc++abi' \
@@ -71,14 +72,20 @@ RUN cd ${SOURCE_CODE_DIR} && \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
       	&& make cxx -j4 \
         && make install \
+        && cd .. \
+        && rm -rf build \
       	&& rm -rf ${SOURCE_CODE_DIR}/llvm-project
 
+# We only needed them to build llvm libc++, now make sure we don't use them
+RUN DEBIAN_FRONTEND=noninteractive apt-get remove  -y  libc++-dev libc++abi-dev
+
+
 # Important for sanitizers
-ARG CLANG_SANITIZER=address
-ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER}"
-ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER}"
+ARG CLANG_SANITIZER="memory"
+ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
+ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
 ENV LDFLAGS="-fsanitize=${CLANG_SANITIZER}"
-ENV MSAN_CFLAGS="-fsanitize-recover=memory -fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
+ENV MSAN_CFLAGS="-fsanitize-recover=memory -fsanitize-recover=all -fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
 
 
 ###### MPI
@@ -92,7 +99,7 @@ RUN cd ${SOURCE_CODE_DIR} &&\
     git clone --recursive --branch boost-${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION} https://github.com/boostorg/boost  --single-branch && \
     cd boost && \
     ./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
-    ./b2  --toolset=$CC cxxflags="${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include" linkflags="-fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib" --threading=multi install && \
+    ./b2  --toolset=$CC cxxflags="-O0 -g ${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include -fsanitize-recover=all" linkflags="-fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib" --threading=multi install && \
     cd ${SOURCE_CODE_DIR} && \
     rm -rf boost*
 
@@ -125,6 +132,11 @@ RUN mkdir -p $DATA_DIR && \
 
 RUN mkdir -p ${DATA_DIR}/scratch
 
+# OPM without any sanitizers, for sanity checks
+COPY scripts_in_container/build_opm_pure.sh ${SCRIPT_DIR}/
+RUN mkdir -p /opm_pure && cd opm_pure && \
+  bash ${SCRIPT_DIR}/build_opm_pure.sh
+
 WORKDIR ${DATA_DIR}/scratch
 
 
@@ -136,6 +148,8 @@ COPY scripts_in_container/run_simulator.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/compile.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/entrypoint.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/blacklist_*.txt ${SCRIPT_DIR}/
+COPY scripts_in_container/call_genkw.sh ${SCRIPT_DIR}/
+
 RUN chmod -R a+rwX ${SCRIPT_DIR}
 
 
