@@ -1,13 +1,11 @@
 #!/bin/bash
 set -e
-## Author: Franz G. Fuchs
-
-module purge
-source modules_to_load.sh
-
+set -o xtrace
 location=`pwd`
 
-parallel_build_tasks=9
+parallel_build_tasks=4
+export CC=$(which gcc)
+export CXX=$(which g++)
 
 #############################################
 ### Zoltan
@@ -15,8 +13,23 @@ parallel_build_tasks=9
 
 
 export INSTALL_PREFIX=$location"/boost"
+export CXXFLAGS='-O2'
+export CFLAGS='-O2'
+export LDFLAGS=''
 
-bash install_boost.sh
+BOOST_MAJOR_VERSION=1
+BOOST_MINOR_VERSION=73
+BOOST_RELEASE_VERSION=0
+wget -q https://dl.bintray.com/boostorg/release/${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION}/source/boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}.tar.bz2
+tar xf boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}.tar.bz2
+cd boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}
+##CXX=${MY_CXX} ./bootstrap.sh --with-libraries=all --prefix=$INSTALL_PREFIX #program_options,filesystem,system,regex,thread,chrono,date_time,log,spirit --prefix=$INSTALL_PREFIX
+./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX || (cat bootstrap.log && exit 1)
+./b2 --threading=multi --toolset=gcc --layout=tagged install
+cd ..
+rm -rf boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}
+rm -rf boost_${BOOST_MAJOR_VERSION}_${BOOST_MINOR_VERSION}_${BOOST_RELEASE_VERSION}.tar.bz2
+
 install_prefix=$location"/zoltan"
 if [[ ! -d $install_prefix ]]; then
     mkdir $install_prefix
@@ -41,12 +54,14 @@ fi
     -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
     -D Trilinos_ENABLE_Zoltan:BOOL=ON \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS='-fPIE' \
+    -DCMAKE_CXX_FLAGS='-fPIE' \
     -Wno-dev \
     ../
     make -j $parallel_build_tasks
     make install
     cd $location
-#    rm -rf Trilinos
+    rm -rf Trilinos
 )
 
 #############################################
@@ -92,9 +107,7 @@ do
             mkdir build
         fi
         cd build
-        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/zoltan/;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;$location/boost" -DCMAKE_BUILD_TYPE=Release -Wno-dev .. 
+        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/zoltan/;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;$location/boost" -DCMAKE_BUILD_TYPE=Release -Wno-dev ..
         make -j $parallel_build_tasks
     )
 done
-
-
