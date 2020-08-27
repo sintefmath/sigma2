@@ -37,7 +37,20 @@ ENV DUNE_MAJOR_VERSION 2
 ENV DUNE_MINOR_VERSION 7
 
 # MPI
-ARG OPM_MPI_TYPE="MPICH"
+ENV OPM_MPI_TYPE="OPENMPI"
+
+
+# Important for sanitizers
+ARG CLANG_SANITIZER="memory"
+ARG CLANG_SANITZER_CAPITAL="Memory"
+ENV CONTAINER_CLANG_SANITIZER="${CLANG_SANITZER}"
+ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
+ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
+ENV LDFLAGS="-fsanitize=${CLANG_SANITIZER}"
+ENV MSAN_CFLAGS="-fsanitize-recover=${CLANG_SANITIZER} -fsanitize-recover=all -fsanitize=${CLANG_SANITIZER} -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
+ENV BUILD_POSTFIX="_${CLANG_SANITZER}"
+
+
 
 
 RUN mkdir -p ${SOURCE_CODE_DIR}
@@ -68,7 +81,7 @@ RUN cd ${SOURCE_CODE_DIR} && \
           -DCMAKE_SHARED_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
           -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
           -DCMAKE_CXX_COMPILER=clang++ \
-          -DLLVM_USE_SANITIZER=Memory \
+          -DLLVM_USE_SANITIZER=${CLANG_SANITZER_CAPITAL} \
           -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
       	&& make cxx -j4 \
         && make install \
@@ -79,51 +92,16 @@ RUN cd ${SOURCE_CODE_DIR} && \
 # We only needed them to build llvm libc++, now make sure we don't use them
 RUN DEBIAN_FRONTEND=noninteractive apt-get remove  -y  libc++-dev libc++abi-dev
 
-
-# Important for sanitizers
-ARG CLANG_SANITIZER="memory"
-ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
-ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
-ENV LDFLAGS="-fsanitize=${CLANG_SANITIZER}"
-ENV MSAN_CFLAGS="-fsanitize-recover=memory -fsanitize-recover=all -fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
-
-
-###### MPI
-COPY scripts_in_container/compile_mpi.sh ${SOURCE_CODE_DIR}/
-RUN cd ${SOURCE_CODE_DIR} && \
-  bash compile_mpi.sh
-
-
 ###### BOOST
 RUN cd ${SOURCE_CODE_DIR} &&\
     git clone --recursive --branch boost-${BOOST_MAJOR_VERSION}.${BOOST_MINOR_VERSION}.${BOOST_RELEASE_VERSION} https://github.com/boostorg/boost  --single-branch && \
     cd boost && \
     ./bootstrap.sh --with-python=$(which python3) --with-libraries=python,program_options,filesystem,system,regex,thread,chrono,date_time,log,test --prefix=$INSTALL_PREFIX && \
-    ./b2  --toolset=$CC cxxflags="-O0 -g ${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include -fsanitize-recover=all" linkflags="-fsanitize=memory -stdlib=libc++ -L${INSTALL_PREFIX}/lib" --threading=multi install && \
+    ./b2  --toolset=$CC cxxflags="-O0 -g ${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include -fsanitize-recover=all" linkflags="-fsanitize=${CLANG_SANITZER} -stdlib=libc++ -L${INSTALL_PREFIX}/lib" --threading=multi install && \
     cd ${SOURCE_CODE_DIR} && \
     rm -rf boost*
 
-##### TRILINOS
-RUN cd ${SOURCE_CODE_DIR} && \
-  git clone -b trilinos-release-${TRILINOS_MAJOR_VERSION}-${TRILINOS_MINOR_VERSION}-${TRILINOS_RELEASE_VERSION} https://github.com/trilinos/Trilinos.git && \
-  cd Trilinos && \
-  mkdir build && \
-  cd build && \
-  cmake \
-    -D CMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
-    -D TPL_ENABLE_MPI:BOOL=ON \
-    -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
-    -D Trilinos_ENABLE_Zoltan:BOOL=ON \
-    -D Trilinos_ENABLE_Fortran:BOOL=OFF \
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-    -DCMAKE_C_FLAGS=${MSAN_CFLAGS} \
-    -DCMAKE_CXX_FLAGS=${MSAN_CFLAGS} \
-    -Wno-dev \
-    ../ &&\
-  make -j ${PARALLEL_BUILD_TASKS} && \
-  make install && \
-  cd ${SOURCE_CODE_DIR} && \
-  rm -rf Trilinos
+
 
 ##### OPM-DATA
 RUN mkdir -p $DATA_DIR && \
@@ -142,12 +120,7 @@ WORKDIR ${DATA_DIR}/scratch
 
 ##### SCRIPTS
 RUN mkdir -p ${SCRIPT_DIR}
-COPY scripts_in_container/compile_dune.sh ${SCRIPT_DIR}/
-COPY scripts_in_container/compile_opm.sh ${SCRIPT_DIR}/
-COPY scripts_in_container/run_simulator.sh ${SCRIPT_DIR}/
-COPY scripts_in_container/compile.sh ${SCRIPT_DIR}/
 COPY scripts_in_container/entrypoint.sh ${SCRIPT_DIR}/
-COPY scripts_in_container/blacklist_*.txt ${SCRIPT_DIR}/
 COPY scripts_in_container/call_genkw.sh ${SCRIPT_DIR}/
 
 RUN chmod -R a+rwX ${SCRIPT_DIR}

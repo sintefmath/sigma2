@@ -1,3 +1,3 @@
 #!/bin/bash
 set -e
-docker build . -t opm_mpi
+docker build . -t kjetilly/opm_mpi

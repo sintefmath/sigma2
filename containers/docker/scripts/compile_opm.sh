@@ -12,7 +12,7 @@ then
   CLANG_SANITIZE_FLAG=" "
   BUILD_POSTFIX=''
 else
-  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=$SCRIPT_DIR/blacklist_${1}.txt -fsanitize-recover=${1} -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
+  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=${BLACKLIST_FILE} -fsanitize-recover=${1} -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
   BUILD_POSTFIX="_${1}"
 fi
 
@@ -37,12 +37,12 @@ do
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALL_PREFIX}/lib:${INSTALL_PREFIX}/lib64:
   cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DUSE_MPI=1 \
-    -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
+    -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${INSTALL_PREFIX_SCRATCH};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -Wno-dev .. \
-    -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=memory -fsanitize-recover=memory -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
-    -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=memory -fsanitize-recover=memory -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
-    -DCMAKE_CXX_FLAGS="${MSAN_CFLAGS} -I${INSTALL_PREFIX}/include" \
+    -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${CLANG_SANITZER} -fsanitize-recover=${CLANG_SANITZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=${CLANG_SANITZER} -fsanitize-recover=${CLANG_SANITZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
+    -DCMAKE_CXX_FLAGS="${MSAN_CFLAGS} ${CLANG_SANITIZE_FLAG} -I${INSTALL_PREFIX}/include" \
     -DBUILD_TESTING=OFF \
     -DBUILD_EBOS=OFF \
     -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi' \
