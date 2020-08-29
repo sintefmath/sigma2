@@ -7,14 +7,6 @@ then
   PARALLEL_BUILD_TASKS=4
 fi
 
-if [[ $# -eq 0 ]];
-then
-  CLANG_SANITIZE_FLAG=" "
-  BUILD_POSTFIX=''
-else
-  CLANG_SANITIZE_FLAG="-fsanitize=$1 -fsanitize-blacklist=${BLACKLIST_FILE} -fsanitize-recover=${1} -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
-  BUILD_POSTFIX="_${1}"
-fi
 
 BUILD_FOLDER="build${BUILD_POSTFIX}"
 export SOURCE_CODE_DIR=$(realpath .)
@@ -40,8 +32,8 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALL_PREFIX}/lib:${INSTALL_PREFIX
     -DCMAKE_PREFIX_PATH="${INSTALL_PREFIX};${INSTALL_PREFIX_SCRATCH};${SOURCE_CODE_DIR}/dune-common;${SOURCE_CODE_DIR}/dune-common/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-geometry/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-grid/${BUILD_FOLDER};${SOURCE_CODE_DIR}/dune-istl/${BUILD_FOLDER};" \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -Wno-dev .. \
-    -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${CLANG_SANITZER} -fsanitize-recover=${CLANG_SANITZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
-    -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=${CLANG_SANITZER} -fsanitize-recover=${CLANG_SANITZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
+    -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${CONTAINER_CLANG_SANITIZER} -fsanitize-recover=${CONTAINER_CLANG_SANITIZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=${CONTAINER_CLANG_SANITIZER} -fsanitize-recover=${CONTAINER_CLANG_SANITIZER} -stdlib=libc++ -lc++abi -L${INSTALL_PREFIX}/lib" \
     -DCMAKE_CXX_FLAGS="${MSAN_CFLAGS} ${CLANG_SANITIZE_FLAG} -I${INSTALL_PREFIX}/include" \
     -DBUILD_TESTING=OFF \
     -DBUILD_EBOS=OFF \

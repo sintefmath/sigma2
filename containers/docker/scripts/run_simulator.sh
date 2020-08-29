@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 set -o xtrace
+export INSTALL_PREFIX_SCRATCH=${INSTALL_PREFIX_SCRATCH_BASE}/${CONTAINER_CLANG_SANITIZER}
 
 export ASAN_OPTIONS=halt_on_error=1
 
@@ -11,7 +12,7 @@ else
   number_of_processes=$2
 fi
 
-mpirun_version_output=$(mpirun --version)
+mpirun_version_output=$($INSTALL_PREFIX_SCRATCH/bin/mpirun --version)
 
 # MPICH and OpenMPI require different hostfiles...
 if [[ $mpirun_version_output == *"Open MPI"* ]];
@@ -19,12 +20,12 @@ then
   function run_mpi_with_hosts {
     # Make sure MPI believes we have enough slots
     echo "localhost slots=$number_of_processes" > hostfile
-    time mpirun --hostfile hostfile "$@"
+    time $INSTALL_PREFIX_SCRATCH/bin/mpirun --hostfile hostfile "$@"
   }
 else
   function run_mpi_with_hosts {
     echo "localhost:$number_of_processes" > hosts
-    mpirun -f hosts "$@"
+    $INSTALL_PREFIX_SCRATCH/bin/mpirun -f hosts "$@"
   }
 fi
 if [[ $# -eq 0 ]];

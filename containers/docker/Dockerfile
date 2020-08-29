@@ -43,12 +43,12 @@ ENV OPM_MPI_TYPE="OPENMPI"
 # Important for sanitizers
 ARG CLANG_SANITIZER="memory"
 ARG CLANG_SANITZER_CAPITAL="Memory"
-ENV CONTAINER_CLANG_SANITIZER="${CLANG_SANITZER}"
+
 ENV CFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
 ENV CXXFLAGS="-fno-omit-frame-pointer -O0 -g -fsanitize=${CLANG_SANITZER} -fsanitize-recover=all"
 ENV LDFLAGS="-fsanitize=${CLANG_SANITIZER}"
 ENV MSAN_CFLAGS="-fsanitize-recover=${CLANG_SANITIZER} -fsanitize-recover=all -fsanitize=${CLANG_SANITIZER} -stdlib=libc++ -L${INSTALL_PREFIX}/lib -lc++abi -I${SOURCE_CODE_DIR}libcxx_msan/include -I${SOURCE_CODE_DIR}libcxx_msan/include/c++/v1"
-ENV BUILD_POSTFIX="_${CLANG_SANITZER}"
+ENV BUILD_POSTFIX="_${CLANG_SANITIZER}"
 
 
 
@@ -133,3 +133,5 @@ RUN chmod -R a+rwX ${DATA_DIR} && \
 
 # see https://stackoverflow.com/questions/49133234/docker-entrypoint-with-env-variable-and-optional-arguments
 ENTRYPOINT ["bash", "/scripts/entrypoint.sh"]
+
+ENV CONTAINER_CLANG_SANITIZER=$CLANG_SANITIZER

@@ -20,9 +20,11 @@ then
     mv openmpi-4.0.4 openmpi-4.0.4${BUILD_POSTFIX}
     cd openmpi-4.0.4${BUILD_POSTFIX}
     ./configure --prefix=$INSTALL_PREFIX_SCRATCH --disable-fortran --disable-mpi-fortran
+  else
+    cd openmpi-4.0.4${BUILD_POSTFIX}
+  fi
     make install
     cd ${SOURCE_CODE_DIR}
-  fi
 elif [ "${OPM_MPI_TYPE}" == "MPICH" ];
 then
   ##### MPICH
@@ -35,9 +37,11 @@ then
     # see https://github.com/pmodels/mpich/issues/2643
     PERL_USE_UNSAFE_INC=1 ./autogen.sh
     ./configure --prefix=$INSTALL_PREFIX_SCRATCH --disable-fortran
+  else
+    cd mpich${BUILD_POSTFIX}
+  fi
     make install
     cd ${SOURCE_CODE_DIR}
-  fi
 else
   >&2 echo "Unknown MPI type ${OPM_MPI_TYPE}".
   exti 1
