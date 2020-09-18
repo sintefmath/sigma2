@@ -17,37 +17,8 @@ parallel_build_tasks=9
 export INSTALL_PREFIX=$location"/boost"
 
 bash install_boost.sh
-install_prefix=$location"/zoltan"
-if [[ ! -d $install_prefix ]]; then
-    mkdir $install_prefix
-fi
-
-if [[ ! -d Trilinos ]]; then
-
-    git clone https://github.com/trilinos/Trilinos.git
-
-fi
-(
-    cd Trilinos
-    git checkout trilinos-release-12-8-1
-
-    if [[ ! -d build ]]; then
-        mkdir build
-    fi
-    cd build
-    cmake \
-    -D CMAKE_INSTALL_PREFIX=$install_prefix \
-    -D TPL_ENABLE_MPI:BOOL=ON \
-    -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
-    -D Trilinos_ENABLE_Zoltan:BOOL=ON \
-    -DCMAKE_BUILD_TYPE=Release \
-    -Wno-dev \
-    ../
-    make -j $parallel_build_tasks
-    make install
-    cd $location
-#    rm -rf Trilinos
-)
+bash build_scotch.sh
+bash install_trilinos.sh
 
 #############################################
 ### Dune
@@ -92,7 +63,7 @@ do
             mkdir build
         fi
         cd build
-        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/zoltan/;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;$location/boost" -DCMAKE_BUILD_TYPE=Release -Wno-dev .. 
+        cmake -DUSE_MPI=1  -DCMAKE_PREFIX_PATH="$location/scotch/;$location/trilinostestinstall;$location/dune-common/build/;$location/dune-geometry/build/;$location/dune-grid/build/;$location/dune-istl/build/;$location/boost" -DCMAKE_BUILD_TYPE=Release -Wno-dev .. 
         make -j $parallel_build_tasks
     )
 done
